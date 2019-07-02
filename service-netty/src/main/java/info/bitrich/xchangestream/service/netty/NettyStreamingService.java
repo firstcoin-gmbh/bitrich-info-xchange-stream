@@ -198,6 +198,7 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
                             if (f.isSuccess()) {
                                 completable.onComplete();
                             } else {
+                        	isManualDisconnect.set(true);
                                 webSocketChannel.disconnect().addListener(x -> {
                                     scheduleReconnect();
                                     completable.onError(f.cause());
