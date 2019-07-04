@@ -1,84 +1,34 @@
 package info.bitrich.xchangestream.bitfinex;
 
-import info.bitrich.xchangestream.core.ProductSubscription;
-import info.bitrich.xchangestream.core.StreamingExchange;
+import com.fasterxml.jackson.databind.JsonNode;
 
-import io.reactivex.Completable;
-import io.reactivex.Observable;
+import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import info.bitrich.xchangestream.service.netty.NettyStreamingService;
 
-import org.apache.commons.lang3.StringUtils;
-import org.knowm.xchange.ExchangeSpecification;
-import org.knowm.xchange.bitfinex.v1.BitfinexExchange;
+public class BitfinexStreamingExchange extends BitfinexAbstractStreamingExchange {
+    
+    private static final String API_URI = "wss://api-pub.bitfinex.com/ws/2";
 
-/**
- * Created by Lukas Zaoralek on 7.11.17.
- */
-public class BitfinexStreamingExchange extends BitfinexExchange implements StreamingExchange {
-
-    static final String API_URI = "wss://api.bitfinex.com/ws/2";
-
-    private BitfinexStreamingService streamingService;
     private BitfinexStreamingMarketDataService streamingMarketDataService;
 
     @Override
     protected void initServices() {
         super.initServices();
         this.streamingService = createStreamingService();
-        this.streamingMarketDataService = new BitfinexStreamingMarketDataService(streamingService);
-    }
-
-    private BitfinexStreamingService createStreamingService() {
-        BitfinexStreamingService streamingService = new BitfinexStreamingService(API_URI, getNonceFactory());
-        applyStreamingSpecification(getExchangeSpecification(), streamingService);
-        if (StringUtils.isNotEmpty(exchangeSpecification.getApiKey())) {
-            streamingService.setApiKey(exchangeSpecification.getApiKey());
-            streamingService.setApiSecret(exchangeSpecification.getSecretKey());
-        }
-        return streamingService;
+        this.streamingMarketDataService = new BitfinexStreamingMarketDataService((BitfinexStreamingService) streamingService);
     }
 
     @Override
-    public Completable connect(ProductSubscription... args) {
-        return streamingService.connect();
+    protected NettyStreamingService<JsonNode> createStreamingService() {
+        BitfinexStreamingService service = new BitfinexStreamingService(API_URI);
+        applyStreamingSpecification(getExchangeSpecification(), service);
+
+        return service;
     }
 
     @Override
-    public Completable disconnect() {
-        return streamingService.disconnect();
-    }
-
-    @Override
-    public boolean isAlive() {
-        return streamingService.isSocketOpen();
-    }
-
-    @Override
-    public Observable<Throwable> reconnectFailure() {
-        return streamingService.subscribeReconnectFailure();
-    }
-
-    @Override
-    public Observable<Object> connectionSuccess() {
-        return streamingService.subscribeConnectionSuccess();
-    }
-
-    @Override
-    public ExchangeSpecification getDefaultExchangeSpecification() {
-        ExchangeSpecification spec = super.getDefaultExchangeSpecification();
-        spec.setShouldLoadRemoteMetaData(false);
-
-        return spec;
-    }
-
-    @Override
-    public BitfinexStreamingMarketDataService getStreamingMarketDataService() {
+    public StreamingMarketDataService getStreamingMarketDataService() {
         return streamingMarketDataService;
     }
 
-    @Override
-    public void useCompressedMessages(boolean compressedMessages) { streamingService.useCompressedMessages(compressedMessages); }
-
-    public boolean isAuthenticatedAlive() {
-        return streamingService != null && streamingService.isAuthenticated();
-    }
 }

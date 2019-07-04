@@ -24,7 +24,7 @@ import si.mazi.rescu.SynchronizedValueFactory;
 
 public class BitfinexStreamingServiceTest {
 
-    private BitfinexStreamingService service;
+    private BitfinexStreamingPrivateService service;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock SynchronizedValueFactory<Long> nonceFactory;
@@ -32,7 +32,7 @@ public class BitfinexStreamingServiceTest {
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        service = new BitfinexStreamingService(BitfinexStreamingExchange.API_URI, nonceFactory);
+        service = new BitfinexStreamingPrivateService(BitfinexStreamingPrivateExchange.API_URI, nonceFactory);
     }
 
     @Test
