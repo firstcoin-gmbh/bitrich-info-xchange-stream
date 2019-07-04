@@ -84,7 +84,17 @@ public interface StreamingExchange extends Exchange {
     /**
      * Returns service that can be used to access market data.
      */
-    StreamingMarketDataService getStreamingMarketDataService();
+    default StreamingMarketDataService getStreamingMarketDataService() {
+	throw new NotYetImplementedForExchangeException();
+    }
+    
+    default StreamingTradeService getStreamingTradeService() {
+	throw new NotYetImplementedForExchangeException();
+    }
+    
+    default StreamingAccountInfoService getStreamingAccountInfoService() {
+	throw new NotYetImplementedForExchangeException();
+    }
 
 
     /**
@@ -94,7 +104,7 @@ public interface StreamingExchange extends Exchange {
      */
     void useCompressedMessages(boolean compressedMessages);
 
-    default void applyStreamingSpecification(ExchangeSpecification exchangeSpec, NettyStreamingService streamingService){
+    default void applyStreamingSpecification(ExchangeSpecification exchangeSpec, NettyStreamingService<?> streamingService){
         streamingService.setSocksProxyHost((String) exchangeSpec.getExchangeSpecificParametersItem(SOCKS_PROXY_HOST));
         streamingService.setSocksProxyPort((Integer) exchangeSpec.getExchangeSpecificParametersItem(SOCKS_PROXY_PORT));
         streamingService.setBeforeConnectionHandler((Runnable) exchangeSpec.getExchangeSpecificParametersItem(ConnectableService.BEFORE_CONNECTION_HANDLER));
