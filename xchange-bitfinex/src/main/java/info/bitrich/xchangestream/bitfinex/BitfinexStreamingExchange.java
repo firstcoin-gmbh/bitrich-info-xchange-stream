@@ -7,7 +7,14 @@ import info.bitrich.xchangestream.service.netty.NettyStreamingService;
 
 public class BitfinexStreamingExchange extends BitfinexAbstractStreamingExchange {
     
-    private static final String API_URI = "wss://api-pub.bitfinex.com/ws/2";
+    private static String API_URI = "wss://api.bitfinex.com/ws/2";
+    
+    static {
+	String apiUri = System.getProperty("xchangestream.bitfinex.BitfinexStreamingExchange.API_URI");
+	if (apiUri != null) {
+	    API_URI = apiUri;
+	}
+    }
 
     private BitfinexStreamingMarketDataService streamingMarketDataService;
 
