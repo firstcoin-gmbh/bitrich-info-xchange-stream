@@ -17,11 +17,11 @@ public class CexioStreamingExchange extends CexIOExchange implements StreamingEx
 
     private SynchronizedValueFactory<Long> nonceFactory = new CurrentTimeNonceFactory();
 
-    private final CexioStreamingExtendedRawService streamingRawService;
+    private final CexioStreamingRawService streamingRawService;
     private final CexioStreamingMarketDataService streamingMarketDataService;
 
     public CexioStreamingExchange() {
-	this.streamingRawService = new CexioStreamingExtendedRawService(API_URI);
+	this.streamingRawService = new CexioStreamingRawService(API_URI);
 	this.streamingMarketDataService = new CexioStreamingMarketDataService(streamingRawService);
     }
 
@@ -82,7 +82,7 @@ public class CexioStreamingExchange extends CexIOExchange implements StreamingEx
 	}
     }
     
-    public CexioStreamingExtendedRawService getStreamingRawService() {
+    public CexioStreamingRawService getStreamingRawService() {
 	return streamingRawService;
     }
 

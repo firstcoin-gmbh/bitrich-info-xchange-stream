@@ -47,11 +47,15 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.internal.SocketUtils;
 import io.reactivex.Completable;
+import io.reactivex.CompletableEmitter;
+import io.reactivex.CompletableOnSubscribe;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 
 public abstract class NettyStreamingService<T> extends ConnectableService {
+    
     private final Logger LOG = LoggerFactory.getLogger(this.getClass());
+    
     private static final Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_RETRY_DURATION = Duration.ofSeconds(15);
 
@@ -66,7 +70,26 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
             this.args = args;
         }
     }
+    
+    public class AuthCompletable implements CompletableOnSubscribe {
 
+	private CompletableEmitter completableEmitter;
+
+	@Override
+	public void subscribe(CompletableEmitter e) throws Exception {
+	    this.completableEmitter = e;
+	}
+
+	public void signalAuthComplete() {
+	    completableEmitter.onComplete();
+	}
+
+	public void signalError(String error) {
+	    completableEmitter.onError(new IllegalStateException(error));
+	}
+	
+    }
+    
     private final int maxFramePayloadLength;
     private final URI uri;
     private AtomicBoolean isManualDisconnect = new AtomicBoolean();
@@ -78,6 +101,8 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
     private boolean compressedMessages = false;
     private final List<ObservableEmitter<Throwable>> reconnFailEmitters = new LinkedList<>();
     private final List<ObservableEmitter<Object>> connectionSuccessEmitters = new LinkedList<>();
+    
+    protected final AuthCompletable authCompletable = new AuthCompletable();
 
     //debugging
     private boolean acceptAllCertificates = false;
@@ -107,7 +132,7 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
 
     @Override
     protected Completable openConnection() {
-        return Completable.create(completable -> {
+        final Completable connectionCompletable = Completable.create(completable -> {
             try {
                 if (isSocketOpen()) {
                   completable.onComplete();
@@ -215,19 +240,30 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
                 scheduleReconnect();
                 completable.onError(throwable);
             }
-        }).doOnError(t -> {
-            if (t instanceof WebSocketHandshakeException) {
-                LOG.warn("Problem with connection: {} - {}", t.getClass(), t.getMessage());
-            } else {
-                LOG.warn("Problem with connection", t);
-            }
-            reconnFailEmitters.forEach(emitter -> emitter.onNext(t));
-        }).doOnComplete(() -> {
-            LOG.warn("Resubscribing channels");
-            resubscribeChannels();
-
-            connectionSuccessEmitters.forEach(emitter -> emitter.onNext(new Object()));
         });
+        
+        return connectionCompletable.andThen(hasAuthentication() 
+        	? Completable.create(authCompletable) 
+        		: Completable.complete())
+        	.doOnError(t -> {
+                    if (t instanceof WebSocketHandshakeException) {
+                        LOG.warn("Problem with connection: {} - {}", t.getClass(), t.getMessage());
+                    } else {
+                        LOG.warn("Problem with connection", t);
+                    }
+                    reconnFailEmitters.forEach(emitter -> emitter.onNext(t));
+                })
+        	.doOnComplete(() -> {
+                    if (!channels.isEmpty()) {
+                	LOG.warn("Resubscribing channels");
+                	resubscribeChannels();
+                    }
+                    connectionSuccessEmitters.forEach(emitter -> emitter.onNext(new Object()));
+                });
+    }
+    
+    protected boolean hasAuthentication() {
+	return false;
     }
     
     private void scheduleReconnect() {

@@ -18,9 +18,4 @@ public class BitfinexStreamingService extends BitfinexAbstractStreamingService {
         // this service do not authenticate
     }
 
-    @Override
-    protected boolean isAuthenticated() {
-        return false;
-    }
-
 }

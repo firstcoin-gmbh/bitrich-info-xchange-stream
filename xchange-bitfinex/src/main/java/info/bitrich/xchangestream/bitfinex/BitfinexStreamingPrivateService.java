@@ -87,20 +87,7 @@ public class BitfinexStreamingPrivateService extends BitfinexAbstractStreamingSe
                 // In case bitfinex adds new channels, ignore
         }
     }
-
-    void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-
-    void setApiSecret(String apiSecret) {
-        this.apiSecret = apiSecret;
-    }
-
-    @Override
-    protected boolean isAuthenticated() {
-        return StringUtils.isNotEmpty(apiKey);
-    }
-
+    
     @Override
     protected void auth() {
         long nonce = nonceFactory.createValue();
@@ -120,6 +107,19 @@ public class BitfinexStreamingPrivateService extends BitfinexAbstractStreamingSe
                 apiKey, payload, String.valueOf(nonce), signature.toLowerCase()
         );
         sendObjectMessage(message);
+    }
+
+    void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    void setApiSecret(String apiSecret) {
+        this.apiSecret = apiSecret;
+    }
+    
+    @Override
+    protected boolean hasAuthentication() {
+	return StringUtils.isNotEmpty(apiKey);
     }
 
     Observable<BitfinexWebSocketAuthOrder> getAuthenticatedOrders() {

@@ -37,6 +37,7 @@ public abstract class BitfinexAbstractStreamingService extends JsonNettyStreamin
     private static final int SUBSCRIPTION_FAILED = 10300;
 
     private final Map<String, String> subscribedChannels = new HashMap<>();
+    private boolean authenticated = false;
 
     public BitfinexAbstractStreamingService(String apiUrl, int maxFramePayloadLength) {
         super(apiUrl, maxFramePayloadLength);
@@ -85,15 +86,19 @@ public abstract class BitfinexAbstractStreamingService extends JsonNettyStreamin
                     if (code != null) {
                         log.debug("Bitfinex sent the error code {}: {}", code.intValue(), message.get(MESSAGE));
                     }
-                    if (isAuthenticated()) {
+                    if (hasAuthentication()) {
                         auth();
                     }
                     break;
                 case AUTH:
                     if (message.get(STATUS).textValue().equals(BitfinexAuthRequestStatus.FAILED.name())) {
-                        log.error("Authentication error: {}", message.get(MESSAGE));
+                	final JsonNode error = message.get(MESSAGE);
+                	authCompletable.signalError(error.toString());
+                        log.error("Authentication error: {}", error);
                     }
                     if (message.get(STATUS).textValue().equals(BitfinexAuthRequestStatus.OK.name())) {
+                	authCompletable.signalAuthComplete();
+                	this.authenticated = true;
                         log.info("Authenticated successfully");
                     }
                     break;
@@ -135,10 +140,12 @@ public abstract class BitfinexAbstractStreamingService extends JsonNettyStreamin
             super.handleMessage(message);
         }
     }
-
+    
     protected abstract void auth();
 
-    protected abstract boolean isAuthenticated();
+    public boolean isAuthenticated() {
+	return authenticated;
+    }
 
     protected abstract void processAuthenticatedMessage(JsonNode message);
 
