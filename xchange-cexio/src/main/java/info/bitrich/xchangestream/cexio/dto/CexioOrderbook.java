@@ -13,13 +13,19 @@ import org.knowm.xchange.cexio.dto.marketdata.CexIODepth;
 
 public class CexioOrderbook {
     
+    private long id;
     private long timestamp;
     private final SortedMap<BigDecimal, BigDecimal[]> bids = new TreeMap<>(java.util.Collections.reverseOrder());
     private final SortedMap<BigDecimal, BigDecimal[]> asks = new TreeMap<>();
     
-    public CexioOrderbook(long timestamp, BigDecimal[][] bids, BigDecimal[][] asks) {
+    public CexioOrderbook(long id, long timestamp, BigDecimal[][] bids, BigDecimal[][] asks) {
+	this.id = id;
         this.timestamp = timestamp;
         createFromData(bids, asks);
+    }
+    
+    public long getId() {
+	return id;
     }
     
     private void createFromData(BigDecimal[][] bids, BigDecimal[][] asks) {
@@ -33,7 +39,11 @@ public class CexioOrderbook {
                 asks.entrySet().stream().map(level -> Arrays.asList(level.getValue())).collect(Collectors.toList()));
     }
     
-    public void updateData(long timestamp, BigDecimal[][] bids, BigDecimal[][] asks) {
+    public void updateData(long id, long timestamp, BigDecimal[][] bids, BigDecimal[][] asks) {
+	if (id != this.id + 1) {
+	    throw new IllegalArgumentException(String.format("New id %s out of sync. Old id is %s.", id, this.id));
+	}
+	this.id = id;
         this.timestamp = timestamp;
         Stream.of(bids).forEach(level -> {
             boolean shouldDelete = level[1].compareTo(ZERO) == 0;

@@ -46,7 +46,7 @@ public class CexioWebSocketOrderbookSnapshot extends CexioWebSocketOrderbookTran
 
     @Override
     public CexioOrderbook toCexioOrderBook(CexioOrderbook orderbook) {
-        return new CexioOrderbook(timestamp, getBids(), getAsks());
+        return new CexioOrderbook(id, timestamp, getBids(), getAsks());
     }
 
     @Override
