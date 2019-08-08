@@ -18,12 +18,13 @@ import static info.bitrich.xchangestream.cexio.CexioStreamingRawService.ORDERBOO
 import static org.knowm.xchange.cexio.CexIOAdapters.adaptOrderBook;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.knowm.xchange.cexio.dto.marketdata.CexIODepth;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
@@ -38,7 +39,7 @@ public class CexioStreamingMarketDataService implements StreamingMarketDataServi
 
     private final CexioStreamingRawService service;
     
-    private final Map<CurrencyPair, CexioOrderbook> orderbooks = new HashMap<>();
+    private final Map<CurrencyPair, CexioOrderbook> orderbooks = new ConcurrentHashMap<>();
     private final List<ObservableEmitter<CurrencyPair>> checksumFailedEmitters = new LinkedList<>();
 
     public CexioStreamingMarketDataService(CexioStreamingRawService service) {
@@ -74,9 +75,20 @@ public class CexioStreamingMarketDataService implements StreamingMarketDataServi
 		
 		if (orderbookTransaction.isPresent()) {
 		    newOrderbook = orderbookTransaction.get().toCexioOrderBook(oldOrderbook);
-		    orderbooks.put(currencyPair, newOrderbook);
+		    orderbooks.merge(currencyPair, newOrderbook, (oldValue, newValue) -> {
+			if (newValue == null || newValue.getId() > oldValue.getId()) {
+			    return newValue;
+			} else {
+			    return oldValue;
+			}
+		    });
 		}
-		return adaptOrderBook(newOrderbook.toCexioDepth(), currencyPair);
+		return adaptOrderBook(newOrderbook != null 
+			? newOrderbook.toCexioDepth() 
+				: new CexIODepth(String.format("No %s/%s orderbook available!", 
+					currencyPair.base.getCurrencyCode(), 
+					currencyPair.counter.getCurrencyCode())), 
+				currencyPair);
 	    } catch (IllegalArgumentException e) {
 		LOG.error("Stale orderbook {}: {}", currencyPair, e.getMessage());
 		checksumFailedEmitters.forEach(emitter -> emitter.onNext(currencyPair));

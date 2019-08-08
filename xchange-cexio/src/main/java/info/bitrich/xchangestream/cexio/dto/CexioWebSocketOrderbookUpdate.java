@@ -30,7 +30,9 @@ public class CexioWebSocketOrderbookUpdate extends CexioWebSocketOrderbookTransa
 
     @Override
     public CexioOrderbook toCexioOrderBook(CexioOrderbook orderbook) {
-        orderbook.updateData(id, time / 1000L, getBids(), getAsks());
+	if (orderbook != null) {
+	    orderbook.updateData(id, time / 1000L, getBids(), getAsks());
+	}
         return orderbook;
     }
 

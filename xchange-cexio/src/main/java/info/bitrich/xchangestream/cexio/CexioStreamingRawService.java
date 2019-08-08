@@ -170,16 +170,10 @@ public class CexioStreamingRawService extends JsonNettyStreamingService {
 		    LOG.debug("Received Auth response: {}", response);
 		    if (response != null) {
 			if (response.isSuccess()) {
-//			    synchronized (authCompletable) {
-//				authCompletable.signalAuthComplete();
-//			    }
 			    authCompletable.signalAuthComplete();
 			} else {
 			    String authErrorString = String.format("Authentication error: %s", response.getData().getError());
 			    LOG.error(authErrorString);
-//			    synchronized (authCompletable) {
-//				authCompletable.signalError(authErrorString);
-//			    }
 			    authCompletable.signalError(authErrorString);
 			}
 		    }
@@ -220,7 +214,15 @@ public class CexioStreamingRawService extends JsonNettyStreamingService {
 			LOG.error(errorString);
 			subjectOrder.onError(new IllegalArgumentException(errorString));
 		    } else {
+			if (LOG.isDebugEnabled()) {
+			    LOG.debug("Orderbook Subscription Message: {}", message);
+			}
 			super.handleMessage(message);
+		    }
+		    break;
+		case ORDERBOOK_UNSUBSCRIPTION_EVENT:
+		    if (LOG.isDebugEnabled()) {
+			LOG.debug("Orderbook Unsubscription Message: {}", message);
 		    }
 		    break;
 		case MARKET_DATA_UPDATE_EVENT:
