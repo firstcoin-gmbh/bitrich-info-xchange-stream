@@ -10,6 +10,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.ContinuationWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.PongWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -20,6 +21,8 @@ import io.netty.util.CharsetUtil;
 
 public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketClientHandler.class);
+    
+    private final StringBuilder currentMessage = new StringBuilder();
 
     public interface WebSocketMessageHandler {
         public void onMessage(String message);
@@ -76,8 +79,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
         WebSocketFrame frame = (WebSocketFrame)msg;
         if (frame instanceof TextWebSocketFrame) {
-            TextWebSocketFrame textFrame = (TextWebSocketFrame)frame;
-            handler.onMessage(textFrame.text());
+            dealWithTextFrame((TextWebSocketFrame) frame);
+        } else if (frame instanceof ContinuationWebSocketFrame) {
+            dealWithContinuation((ContinuationWebSocketFrame) frame);
         } else if (frame instanceof PingWebSocketFrame) {
             LOG.debug("WebSocket Client received ping");
             ch.writeAndFlush(new PongWebSocketFrame(frame.content().retain()));
@@ -86,6 +90,22 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         } else if (frame instanceof CloseWebSocketFrame) {
             LOG.info("WebSocket Client received closing");
             ch.close();
+        }
+    }
+    
+    private void dealWithTextFrame(TextWebSocketFrame frame) {
+        if (frame.isFinalFragment()) {
+            handler.onMessage(frame.text());
+            return;
+        }
+        currentMessage.append(frame.text());
+    }
+    
+    private void dealWithContinuation(ContinuationWebSocketFrame frame) {
+        currentMessage.append(frame.text());
+        if (frame.isFinalFragment()) {
+            handler.onMessage(currentMessage.toString());
+            currentMessage.setLength(0);
         }
     }
 
