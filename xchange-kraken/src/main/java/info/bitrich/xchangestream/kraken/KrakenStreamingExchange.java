@@ -52,6 +52,16 @@ public class KrakenStreamingExchange extends KrakenExchange implements Streaming
     public SynchronizedValueFactory<Long> getNonceFactory() {
         return null;
     }
+    
+    @Override
+    public Observable<Throwable> reconnectFailure() {
+	return streamingService.subscribeReconnectFailure();
+    }
+
+    @Override
+    public Observable<Object> connectionSuccess() {
+	return streamingService.subscribeConnectionSuccess();
+    }
 
     @Override
     public ExchangeSpecification getDefaultExchangeSpecification() {
