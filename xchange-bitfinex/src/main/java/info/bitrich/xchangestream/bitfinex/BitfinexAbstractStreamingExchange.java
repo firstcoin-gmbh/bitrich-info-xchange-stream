@@ -59,8 +59,7 @@ public abstract class BitfinexAbstractStreamingExchange extends BitfinexExchange
     
     @Override
     public Completable connect(ProductSubscription... args) {
-        return streamingService.connect()
-        	.doOnComplete(() -> streamingService.sendMessage("{ \"event\": \"conf\", \"flags\": 131072 }"));
+        return streamingService.connect();
     }
 
     @Override
