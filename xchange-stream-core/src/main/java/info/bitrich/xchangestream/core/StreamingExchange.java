@@ -88,10 +88,6 @@ public interface StreamingExchange extends Exchange {
 	throw new NotYetImplementedForExchangeException();
     }
     
-    default StreamingTradeService getStreamingTradeService() {
-	throw new NotYetImplementedForExchangeException();
-    }
-    
     default StreamingAccountInfoService getStreamingAccountInfoService() {
 	throw new NotYetImplementedForExchangeException();
     }

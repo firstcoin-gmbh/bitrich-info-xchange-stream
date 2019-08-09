@@ -16,9 +16,9 @@ public class BitfinexStreamingAccountService implements StreamingAccountService 
 
     private static final Logger LOG = LoggerFactory.getLogger(BitfinexStreamingAccountService.class);
 
-    private final BitfinexStreamingService service;
+    private final BitfinexStreamingPrivateService service;
 
-    public BitfinexStreamingAccountService(BitfinexStreamingService service) {
+    public BitfinexStreamingAccountService(BitfinexStreamingPrivateService service) {
         this.service = service;
     }
 
