@@ -13,7 +13,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.PublishSubject;
 
 import org.apache.commons.lang3.StringUtils;
-import org.knowm.xchange.bitfinex.v1.BitfinexAdapters;
+import org.knowm.xchange.bitfinex.service.BitfinexAdapters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,6 +1,6 @@
 package info.bitrich.xchangestream.bitfinex;
 
-import static org.knowm.xchange.bitfinex.v1.BitfinexAdapters.adaptWallets;
+import static org.knowm.xchange.bitfinex.service.BitfinexAdapters.adaptWallets;
 
 import java.math.BigDecimal;
 import java.util.List;

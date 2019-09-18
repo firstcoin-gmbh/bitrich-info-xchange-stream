@@ -1,8 +1,8 @@
 package info.bitrich.xchangestream.bitfinex;
 
 import static info.bitrich.xchangestream.bitfinex.BitfinexUtils.*;
-import static org.knowm.xchange.bitfinex.v1.BitfinexAdapters.adaptOrders;
-import static org.knowm.xchange.bitfinex.v1.BitfinexAdapters.adaptTradeHistory;
+import static org.knowm.xchange.bitfinex.service.BitfinexAdapters.adaptOrders;
+import static org.knowm.xchange.bitfinex.service.BitfinexAdapters.adaptTradeHistory;
 
 import java.math.BigInteger;
 import java.util.function.Function;
