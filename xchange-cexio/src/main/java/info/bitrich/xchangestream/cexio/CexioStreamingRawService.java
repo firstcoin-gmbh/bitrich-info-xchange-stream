@@ -4,9 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import info.bitrich.xchangestream.cexio.dto.*;
 import info.bitrich.xchangestream.service.netty.JsonNettyStreamingService;
+import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,7 +41,13 @@ public class CexioStreamingRawService extends JsonNettyStreamingService {
     private PublishSubject<CexioWebSocketTransaction> subjectTransaction = PublishSubject.create();
 
     public CexioStreamingRawService(String apiUrl) {
-	super(apiUrl, Integer.MAX_VALUE);
+	super(apiUrl, Integer.MAX_VALUE, Duration.ofSeconds(10), Duration.ofSeconds(15), 60);
+    }
+
+    @Override
+    protected void handleIdle(ChannelHandlerContext ctx) {
+	LOG.warn("WebSocket client detected idling, Closing.");
+	ctx.close();
     }
 
     @Override
