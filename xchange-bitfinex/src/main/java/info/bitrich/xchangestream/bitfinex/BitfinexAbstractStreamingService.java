@@ -1,6 +1,7 @@
 package info.bitrich.xchangestream.bitfinex;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,6 +42,10 @@ public abstract class BitfinexAbstractStreamingService extends JsonNettyStreamin
 
     public BitfinexAbstractStreamingService(String apiUrl, int maxFramePayloadLength) {
         super(apiUrl, maxFramePayloadLength);
+    }
+    
+    public BitfinexAbstractStreamingService(String apiUrl, int maxFramePayloadLength, Duration connectionTimeout, Duration retryDuration, int idleTimeoutSeconds) {
+	super(apiUrl, maxFramePayloadLength, connectionTimeout, retryDuration, idleTimeoutSeconds);
     }
 
     @Override
