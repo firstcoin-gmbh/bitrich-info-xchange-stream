@@ -35,6 +35,8 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.internal.SocketUtils;
 import io.reactivex.Completable;
+import io.reactivex.CompletableEmitter;
+import io.reactivex.CompletableOnSubscribe;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.subjects.PublishSubject;
@@ -71,6 +73,24 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
     }
   }
 
+  public class AuthCompletable implements CompletableOnSubscribe {
+
+    private CompletableEmitter completableEmitter;
+
+    @Override
+    public void subscribe(CompletableEmitter e) throws Exception {
+      this.completableEmitter = e;
+    }
+
+    public void signalAuthComplete() {
+      completableEmitter.onComplete();
+    }
+
+    public void signalError(String error) {
+      completableEmitter.onError(new IllegalStateException(error));
+    }
+  }
+
   private final int maxFramePayloadLength;
   private final URI uri;
   private final AtomicBoolean isManualDisconnect = new AtomicBoolean();
@@ -84,6 +104,7 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
   private final List<ObservableEmitter<Throwable>> reconnFailEmitters = new LinkedList<>();
   private final List<ObservableEmitter<Object>> connectionSuccessEmitters = new LinkedList<>();
   private final PublishSubject<Object> subjectIdle = PublishSubject.create();
+  protected final AuthCompletable authCompletable = new AuthCompletable();
 
   // debugging
   private boolean acceptAllCertificates = false;
@@ -128,10 +149,13 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
 
   @Override
   protected Completable openConnection() {
-    return Completable.create(
+    final Completable connectionCompletable =
+        Completable.create(
             completable -> {
               try {
-
+                if (isSocketOpen()) {
+                  completable.onComplete();
+                }
                 LOG.info("Connecting to {}", uri.toString());
                 String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
 
@@ -250,7 +274,10 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
                 scheduleReconnect();
                 completable.onError(throwable);
               }
-            })
+            });
+
+    return connectionCompletable
+        .andThen(hasAuthentication() ? Completable.create(authCompletable) : Completable.complete())
         .doOnError(
             t -> {
               if (t instanceof WebSocketHandshakeException) {
@@ -266,6 +293,10 @@ public abstract class NettyStreamingService<T> extends ConnectableService {
 
               connectionSuccessEmitters.forEach(emitter -> emitter.onNext(new Object()));
             });
+  }
+
+  protected boolean hasAuthentication() {
+    return false;
   }
 
   private void scheduleReconnect() {
