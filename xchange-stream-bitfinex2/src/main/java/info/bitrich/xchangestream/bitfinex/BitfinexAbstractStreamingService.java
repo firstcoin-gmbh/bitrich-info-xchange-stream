@@ -93,14 +93,18 @@ public abstract class BitfinexAbstractStreamingService extends JsonNettyStreamin
           if (code != null) {
             log.debug("Bitfinex sent the error code {}: {}", code.intValue(), message.get(MESSAGE));
           }
-          auth();
+          if (hasAuthentication()) {
+            auth();
+          }
           break;
         case AUTH:
           if (message.get(STATUS).textValue().equals(BitfinexAuthRequestStatus.FAILED.name())) {
             final JsonNode error = message.get(MESSAGE);
+            authCompletable.signalError(error.toString());
             log.error("Authentication error: {}", error);
           }
           if (message.get(STATUS).textValue().equals(BitfinexAuthRequestStatus.OK.name())) {
+            authCompletable.signalAuthComplete();
             this.authenticated = true;
             log.info("Authenticated successfully");
           }

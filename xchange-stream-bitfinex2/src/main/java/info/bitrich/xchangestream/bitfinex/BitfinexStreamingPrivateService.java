@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
+import org.apache.commons.lang3.StringUtils;
 import org.knowm.xchange.bitfinex.service.BitfinexAdapters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,6 +144,11 @@ public class BitfinexStreamingPrivateService extends BitfinexAbstractStreamingSe
 
   void setApiSecret(String apiSecret) {
     this.apiSecret = apiSecret;
+  }
+
+  @Override
+  protected boolean hasAuthentication() {
+    return StringUtils.isNotEmpty(apiKey);
   }
 
   Observable<BitfinexWebSocketAuthOrder> getAuthenticatedOrders() {
