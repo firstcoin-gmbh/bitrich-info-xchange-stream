@@ -178,4 +178,9 @@ class BitfinexStreamingMarketDataService implements StreamingMarketDataService {
           return adaptedTrades.getTrades();
         });
   }
+
+  @Override
+  public Observable<CurrencyPair> checksumFailed() {
+    return Observable.create(checksumFailedEmitters::add);
+  }
 }
