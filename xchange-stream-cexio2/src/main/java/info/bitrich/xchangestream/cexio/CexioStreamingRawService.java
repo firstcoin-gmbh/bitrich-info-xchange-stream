@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 import org.knowm.xchange.dto.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,6 +181,16 @@ public class CexioStreamingRawService extends JsonNettyStreamingService {
             CexioWebSocketAuthResponse response =
                 deserialize(message, CexioWebSocketAuthResponse.class);
             LOG.debug("Received Auth response: {}", response);
+            if (response != null) {
+              if (response.isSuccess()) {
+                authCompletable.signalAuthComplete();
+              } else {
+                String authErrorString =
+                    String.format("Authentication error: %s", response.getData().getError());
+                LOG.error(authErrorString);
+                authCompletable.signalError(authErrorString);
+              }
+            }
             break;
           case PING:
             pong();
@@ -272,6 +283,11 @@ public class CexioStreamingRawService extends JsonNettyStreamingService {
 
   public void setApiSecret(String apiSecret) {
     this.apiSecret = apiSecret;
+  }
+
+  @Override
+  protected boolean hasAuthentication() {
+    return StringUtils.isNotEmpty(apiKey);
   }
 
   private <T> T deserialize(JsonNode message, Class<T> valueType) throws JsonProcessingException {
