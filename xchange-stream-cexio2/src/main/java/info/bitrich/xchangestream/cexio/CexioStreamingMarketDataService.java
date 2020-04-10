@@ -115,4 +115,9 @@ public class CexioStreamingMarketDataService implements StreamingMarketDataServi
   public Observable<Trade> getTrades(CurrencyPair currencyPair, Object... args) {
     throw new NotYetImplementedForExchangeException();
   }
+
+  @Override
+  public Observable<CurrencyPair> checksumFailed() {
+    return Observable.create(checksumFailedEmitters::add);
+  }
 }
