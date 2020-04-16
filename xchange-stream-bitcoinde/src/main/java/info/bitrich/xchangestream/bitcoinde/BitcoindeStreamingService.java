@@ -213,7 +213,8 @@ public class BitcoindeStreamingService extends ConnectableService {
   private class BitcoindeNettyStreamingService extends JsonNettyStreamingService {
 
     private static final char OPEN_BRACET = '{';
-
+    private static final String MESSAGE_PING = "2::";
+    private static final String MESSAGE_EVENT = "5::";
     private static final String FIELD_ARGS = "args";
     private static final String FIELD_EVENT = "name";
     private static final String FIELD_TRADING_PAIR = "trading_pair";
@@ -227,9 +228,10 @@ public class BitcoindeStreamingService extends ConnectableService {
       LOG.trace("Received message: {}", message);
 
       try {
-        int idx = message.indexOf(OPEN_BRACET);
-        if (idx >= 0) {
-          handleMessage(objectMapper.readTree(message.substring(idx)));
+        if (message.startsWith(MESSAGE_PING)) {
+          sendMessage(MESSAGE_PING);
+        } else if (message.startsWith(MESSAGE_EVENT)) {
+          handleMessage(objectMapper.readTree(message.substring(message.indexOf(OPEN_BRACET))));
         }
       } catch (IOException e) {
         LOG.error("Error parsing incoming message to JSON: {}", message);
