@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.knowm.xchange.bitcoinde.dto.marketdata.BitcoindeOrder;
 import org.knowm.xchange.bitcoinde.dto.marketdata.BitcoindeOrderbookWrapper;
 import org.knowm.xchange.bitcoinde.dto.marketdata.BitcoindeOrders;
@@ -32,6 +33,8 @@ public class BitcoindeOrderbook {
   private Map<String, LimitOrder> asks = new HashMap<>();
   private Map<String, LimitOrder> bids = new HashMap<>();
 
+  public BitcoindeOrderbook() {}
+
   public BitcoindeOrderbook(OrderBook orderbook) {
     this(orderbook, ALL);
   }
@@ -45,11 +48,23 @@ public class BitcoindeOrderbook {
         .forEach(order -> this.asks.put(order.getId(), order));
   }
 
+  public BitcoindeOrderbook(LimitOrder[] orders) {
+    Stream.of(orders)
+        .forEach(
+            order -> {
+              if (order.getType() == OrderType.ASK) {
+                this.asks.put(order.getId(), order);
+              } else if (order.getType() == OrderType.BID) {
+                this.bids.put(order.getId(), order);
+              }
+            });
+  }
+
   public synchronized void addOrder(String id, LimitOrder order) {
     final Map<String, LimitOrder> list = order.getType() == OrderType.BID ? this.bids : this.asks;
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("before add: {}={}, order={}", order.getType(), list.size(), order);
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("before add: {}={}, order={}", order.getType(), list.size(), order);
     }
     list.put(id, order);
   }
@@ -57,8 +72,8 @@ public class BitcoindeOrderbook {
   public synchronized boolean removeOrder(String id, OrderType type) {
     final Map<String, LimitOrder> list = type == OrderType.BID ? this.bids : this.asks;
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("before remove: {}={}, containsKey={}", type, list.size(), list.containsKey(id));
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("before remove: {}={}, containsKey={}", type, list.size(), list.containsKey(id));
     }
 
     return list.remove(id) != null;

@@ -11,7 +11,7 @@
   "bic_short": "0yzjPeTwlzkig1B-",
   "bic_full": "0yzjPeTw33DssfxIB4io2Mow-w..",
   "uid": "0yybQJgKojghf0Phqg..",
-  "trade_to_sepa_country": ["DE","AT","CH","BE","GR","MT","SI","BG","IE","NL","SK","DK","IT","ES","HR","PL","CZ","EE","LV","PT","HU","FI","LT","RO","GB","FR","LU","SE","CY","IS","LI","NO","MQ"],
+  "trade_to_sepa_country": "[\"DE\",\"AT\",\"CH\",\"BE\",\"GR\",\"MT\",\"SI\",\"BG\",\"IE\",\"NL\",\"SK\",\"DK\",\"IT\",\"ES\",\"HR\",\"PL\",\"CZ\",\"EE\",\"LV\",\"PT\",\"HU\",\"FI\",\"LT\",\"RO\",\"GB\",\"FR\",\"LU\",\"SE\",\"CY\",\"IS\",\"LI\",\"NO\",\"MQ\"]",
   "is_shorting": "0",
   "is_shorting_allowed": "0",
   "is_trade_by_sepa_allowed": "1",

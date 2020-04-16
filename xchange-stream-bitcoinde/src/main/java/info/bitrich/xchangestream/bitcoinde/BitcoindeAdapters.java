@@ -5,6 +5,9 @@ import info.bitrich.xchangestream.bitcoinde.dto.BitcoindeOrderType;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 import org.knowm.xchange.bitcoinde.OrderQuantities;
 import org.knowm.xchange.bitcoinde.OrderRequirements;
 import org.knowm.xchange.bitcoinde.TradingPartnerInformation;
@@ -56,7 +59,10 @@ public class BitcoindeAdapters {
         new TradingPartnerInformation(bitcoindeOrder.userId, bitcoindeOrder.isKycFull > 0, null);
     tpi.setBankName(bitcoindeOrder.bicShort);
     tpi.setBic(bitcoindeOrder.bicFull);
-    tpi.setSeatOfBank(bitcoindeOrder.seatOfBankOfCreator);
+    tpi.setSeatOfBank(
+        bitcoindeOrder.seatOfBankOfCreator != null
+            ? bitcoindeOrder.seatOfBankOfCreator.toUpperCase()
+            : null);
     limitOrder.addOrderFlag(tpi);
 
     // Order requirements
@@ -64,9 +70,22 @@ public class BitcoindeAdapters {
         new OrderRequirements(TrustLevel.valueOf(bitcoindeOrder.minTrustLevel.toUpperCase()));
     or.setOnlyFullyIdentified(bitcoindeOrder.onlyKycFull > 0);
     or.setPaymentOption(bitcoindeOrder.paymentOption);
-    or.setSeatsOfBank(bitcoindeOrder.tradeToSepaCountry);
+    or.setSeatsOfBank(parseSeatsOfBank(bitcoindeOrder.tradeToSepaCountry));
     limitOrder.addOrderFlag(or);
 
     return limitOrder;
+  }
+
+  private static String[] parseSeatsOfBank(String seatsOfBank) {
+    final String str =
+        seatsOfBank.startsWith("[")
+            ? seatsOfBank.substring(1, seatsOfBank.length() - 1)
+            : seatsOfBank;
+    final List<String> list =
+        Stream.of(str != null ? str.split("\\s*,\\s*") : new String[0])
+            .map(s -> StringUtils.remove(s, '"'))
+            .collect(Collectors.toList());
+
+    return list.toArray(new String[list.size()]);
   }
 }
