@@ -38,6 +38,6 @@ public class BitcoindeOrderAddedTest {
     assertEquals(1, addedOrder.isKycFull);
     assertEquals(3, addedOrder.paymentOption);
     assertEquals("de", addedOrder.seatOfBankOfCreator);
-    assertEquals(33, addedOrder.tradeToSepaCountry.length);
+    assertEquals(33, addedOrder.tradeToSepaCountry.split(",").length);
   }
 }

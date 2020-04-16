@@ -16,9 +16,8 @@ public class BitcoindeStreamingExchange extends BitcoindeExchange implements Str
   @Override
   protected void initServices() {
     super.initServices();
-    this.streamingService = new BitcoindeStreamingService(this);
-    this.streamingMarketDataService =
-        new BitcoindeStreamingMarketDataService(streamingService, getMarketDataService());
+    this.streamingService = new BitcoindeStreamingService(this, getMarketDataService());
+    this.streamingMarketDataService = new BitcoindeStreamingMarketDataService(streamingService);
   }
 
   @Override
@@ -47,12 +46,12 @@ public class BitcoindeStreamingExchange extends BitcoindeExchange implements Str
 
   @Override
   public Observable<Throwable> reconnectFailure() {
-    return this.streamingService.reconnectFailure();
+    return this.streamingService.subscribeReconnectFailure();
   }
 
   @Override
   public Observable<Object> connectionSuccess() {
-    return this.streamingService.connectionSuccess();
+    return this.streamingService.subscribeConnectionSuccess();
   }
 
   @Override

@@ -1,10 +1,8 @@
 package info.bitrich.xchangestream.bitcoinde.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
-import java.util.Arrays;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BitcoindeOrderAdded extends BitcoindeOrderTransaction {
@@ -31,8 +29,7 @@ public class BitcoindeOrderAdded extends BitcoindeOrderTransaction {
   public int onlyKycFull;
 
   @JsonProperty("trade_to_sepa_country")
-  @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-  public String[] tradeToSepaCountry;
+  public String tradeToSepaCountry;
 
   @JsonProperty("uid")
   public String userId;
@@ -79,7 +76,7 @@ public class BitcoindeOrderAdded extends BitcoindeOrderTransaction {
         .append(", onlyKycFull=")
         .append(onlyKycFull)
         .append(", tradeToSepaCountry=")
-        .append(Arrays.toString(tradeToSepaCountry))
+        .append(tradeToSepaCountry)
         .append(", userId=")
         .append(userId)
         .append(", isKycFull=")
