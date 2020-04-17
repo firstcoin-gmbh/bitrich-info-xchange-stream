@@ -154,7 +154,7 @@ public class BitcoindeStreamingService extends ConnectableService {
 
   public boolean isSocketOpen() {
     if (this.delegate != null) {
-      this.delegate.isSocketOpen();
+      return this.delegate.isSocketOpen();
     }
 
     return false;
