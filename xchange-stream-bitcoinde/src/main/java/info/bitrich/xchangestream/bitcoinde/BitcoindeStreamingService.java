@@ -21,16 +21,21 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
+import io.reactivex.internal.functions.Functions;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -51,6 +56,9 @@ public class BitcoindeStreamingService extends ConnectableService {
 
   private static final String REGISTER_WEBSOCKET_URL = "https://ws.bitcoin.de/socket.io/1/?t=%s";
   private static final String WEBSOCKET_URL = "wss://ws.bitcoin.de/socket.io/1/websocket/%s";
+  private static final Duration DEFAULT_RETRY_DURATION = Duration.ofSeconds(15);
+
+  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
   private final StreamingExchange streamingExchange;
   private final MarketDataService marketDataService;
@@ -85,29 +93,45 @@ public class BitcoindeStreamingService extends ConnectableService {
 
   @Override
   protected Completable openConnection() {
-    if (this.delegate == null || !this.delegate.isSocketOpen()) {
-      try {
-        this.delegate = new BitcoindeNettyStreamingService(getWebsocketUrl());
-        this.streamingExchange.applyStreamingSpecification(
-            this.streamingExchange.getExchangeSpecification(), this.delegate);
-        this.delegate.setAutoReconnect(false);
-        this.delegate.useCompressedMessages(compressedMessages);
-        this.delegate
-            .subscribeReconnectFailure()
-            .subscribe(t -> this.reconnFailEmitters.forEach(emitter -> emitter.onNext(t)));
-        this.delegate
-            .subscribeConnectionSuccess()
-            .subscribe(
-                o ->
-                    this.connectionSuccessEmitters.forEach(
-                        emitter -> emitter.onNext(new Object())));
-      } catch (Exception e) {
-        return Completable.error(e)
-            .doOnError(t -> this.reconnFailEmitters.forEach(emitter -> emitter.onNext(t)));
-      }
-    }
-
-    return this.delegate.connect();
+    return Completable.create(
+            completable -> {
+              try {
+                if (this.delegate == null || !this.delegate.isSocketOpen()) {
+                  this.delegate = new BitcoindeNettyStreamingService(getWebsocketUrl());
+                  this.streamingExchange.applyStreamingSpecification(
+                      this.streamingExchange.getExchangeSpecification(), this.delegate);
+                  this.delegate.setAutoReconnect(false);
+                  this.delegate.useCompressedMessages(compressedMessages);
+                  this.delegate
+                      .subscribeReconnectFailure()
+                      .subscribe(
+                          t -> {
+                            scheduleReconnect();
+                            completable.onError(t);
+                          });
+                  this.delegate
+                      .subscribeConnectionSuccess()
+                      .subscribe(o -> completable.onComplete());
+                }
+                this.delegate.connect().subscribe();
+              } catch (Exception throwable) {
+                scheduleReconnect();
+                completable.onError(throwable);
+              }
+            })
+        .doOnError(t -> this.reconnFailEmitters.forEach(emitter -> emitter.onNext(t)))
+        .doOnComplete(
+            () -> {
+              for (Subscription subscription : this.bitcoindeChannels.values()) {
+                try {
+                  subscription.emitter.onNext(
+                      createSnapshotEvent(subscription.currencyPair, subscription.args));
+                } catch (Exception e) {
+                  subscription.emitter.onError(e);
+                }
+              }
+              this.connectionSuccessEmitters.forEach(emitter -> emitter.onNext(new Object()));
+            });
   }
 
   private String getWebsocketUrl() throws IOException {
@@ -126,20 +150,22 @@ public class BitcoindeStreamingService extends ConnectableService {
     throw new ExchangeException("No websocket available!");
   }
 
+  private void scheduleReconnect() {
+    LOG.info("Scheduling reconnection");
+    scheduler.schedule(
+        () ->
+            connect()
+                .subscribe(Functions.EMPTY_ACTION, t -> LOG.error("Reconnecting failed due to", t)),
+        DEFAULT_RETRY_DURATION.toMillis(),
+        TimeUnit.MILLISECONDS);
+  }
+
   protected void reconnect() {
     if (this.isManualDisconnect.compareAndSet(true, false)) {
       // Don't attempt to reconnect
     } else {
       LOG.info("Reconnecting to new websocket because the old one was closed");
-      openConnection().subscribe();
-      for (Subscription subscription : this.bitcoindeChannels.values()) {
-        try {
-          subscription.emitter.onNext(
-              createSnapshotEvent(subscription.currencyPair, subscription.args));
-        } catch (Exception e) {
-          subscription.emitter.onError(e);
-        }
-      }
+      scheduleReconnect();
     }
   }
 
